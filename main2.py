@@ -1,5 +1,6 @@
 from web3 import Web3
 import argparse
+import requests
 
 parser = argparse.ArgumentParser()
 parser.add_argument('address')
@@ -8,15 +9,25 @@ args = parser.parse_args()
 
 w3 = Web3(Web3.HTTPProvider(args.host))
 
-START_BLOCK = 0
+try:
+    # use etherscan api to get the block number of the first transaction
+    # on the contract address
+    apikey = "I78S3B56A2ZZVSEW12ESZ64413Q3JE1KP5"
+    etherscan_url = "https://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&page=1&offset=1&sort=asc&apikey=%s" %(args.address, apikey)
+    r = requests.get(etherscan_url)
+    results = r.json()
+    block_number = int(results['result'][0]['blockNumber'])
+except Exception as e:
+    block_number = 0
+
+START_BLOCK = block_number
 LATEST_BLOCK = w3.eth.blockNumber
 
 done = False
 for block in range(START_BLOCK, LATEST_BLOCK+1):
     # loop through from block START_BLOCK to the latest block
-    print('current block', block)
-
-    # find the total number of transactions without block
+    
+    # find the total number of transactions within block
     total_transactions = w3.eth.getBlockTransactionCount(block)
 
     transaction_hashes = []
